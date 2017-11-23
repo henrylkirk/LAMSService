@@ -31,7 +31,6 @@ public class LAMSService {
       String xml = xmlHead + "<AppointmentList>";
 
       dbSingleton = DBSingleton.getInstance();
-      dbSingleton.db.initialLoad("LAMS");
       System.out.println("All appointments");
       List<Object> objs = dbSingleton.db.getData("Appointment", "");
       for (Object obj : objs){
@@ -41,12 +40,29 @@ public class LAMSService {
       return xml;
    }
 
+   /**
+    * Get the id of a new appointment to add.
+    */
+   private String getNewAppointmentId(){
+      int newId = -1;
+
+      dbSingleton = DBSingleton.getInstance();
+      List<Object> objs = dbSingleton.db.getData("Appointment", "");
+      for (Object obj : objs){
+         int id = Integer.parseInt(((Appointment)obj).getId());
+         if(id > newId){
+            newId = id;
+         }
+      }
+      // return Integer.toString(++newId);
+      return "799";
+   }
+
    // @WebMethod(operationName="GetAppointment")
    public String getAppointment(String appointmentID){
       String xml = xmlHead + "<AppointmentList>";
       
       dbSingleton = DBSingleton.getInstance();
-      dbSingleton.db.initialLoad("LAMS");
       List<Object> objs = dbSingleton.db.getData("Appointment", "id='"+appointmentID+"'");
       for (Object obj : objs){
          xml += formatAppointment(obj);
@@ -110,57 +126,81 @@ public class LAMSService {
    // @WebMethod(operationName="AddAppointment")
    public String addAppointment(String xml){
       String response = xmlHead + "<AppointmentList>";
+      String date, time, patientId, physicianId, pscId, newApptId, phlebotomistId;
+      date = time = patientId = physicianId = pscId = phlebotomistId = "";
+      List<AppointmentLabTest> tests = new ArrayList<AppointmentLabTest>();
+      newApptId = getNewAppointmentId();
 
+      // get values from xml
       try {
          DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
          DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
          Document doc = dBuilder.parse(new InputSource(new StringReader(xml)));
          NodeList nList = doc.getElementsByTagName("appointment");
                
-         Node nNode = nList.item(0); // there should be only one appointment
-         System.out.println("\nCurrent Element: "+nNode.getNodeName());
+         Node apptNode = nList.item(0); // there should be only one appointment
+         // System.out.println("\nCurrent Element: "+apptNode.getNodeName());
               
-         if(nNode.getNodeType() == Node.ELEMENT_NODE){
-            Element eElement = (Element)nNode;
-            // System.out.println("date: "+eElement.getAttribute("date"));
-            System.out.println("date: "+eElement.getElementsByTagName("date").item(0).getTextContent());
-            System.out.println("time: "+eElement.getElementsByTagName("time").item(0).getTextContent());
+         if(apptNode.getNodeType() == Node.ELEMENT_NODE){
+            Element eElement = (Element)apptNode;
             
-            NodeList tests = eElement.getElementsByTagName("test");
-            for(int i = 0 ; i < tests.getLength() ; i++){
-               System.out.println("Test: "+tests.item(i).getTextContent());  
-            }
-            System.out.println("\n\n");
-         }
+            date = eElement.getElementsByTagName("date").item(0).getTextContent();
+            time = eElement.getElementsByTagName("time").item(0).getTextContent();
+            patientId = eElement.getElementsByTagName("patientId").item(0).getTextContent();
+            physicianId = eElement.getElementsByTagName("physicianId").item(0).getTextContent();
+            pscId = eElement.getElementsByTagName("pscId").item(0).getTextContent();
+            phlebotomistId = eElement.getElementsByTagName("phlebotomistId").item(0).getTextContent();
+            
+            // get lab tests
+            NodeList testsNode = eElement.getElementsByTagName("test");
+            // System.out.println("lab test length: "+testsNode.getLength());
+            for(int i = 0 ; i < testsNode.getLength() ; i++){
+               String testId = "";
+               String dxcode = "";
+               Element e = (Element)testsNode.item(i);
+               testId = e.getAttribute("id");
+               dxcode = e.getAttribute("dxcode");
 
+               // create a test & add to list
+               AppointmentLabTest test = new AppointmentLabTest(newApptId,testId,dxcode);
+               test.setDiagnosis((Diagnosis)dbSingleton.db.getData("Diagnosis", "code='"+dxcode+"'").get(0));
+               test.setLabTest((LabTest)dbSingleton.db.getData("LabTest","id='"+testId+"'").get(0));
+               tests.add(test);
+            }
+         }
       } catch(ParserConfigurationException pce){
          System.out.println("ParserConfigurationException caught at addAppointment(String): ");
       } catch(Exception e){
          System.out.println("Exception caught at addAppointment(String): ");
          e.printStackTrace();
       }
-      
 
-      // // System.out.println("^^^^^^^"+phleb.getId());
-      // Appointment newAppt = new Appointment("800",java.sql.Date.valueOf("2009-09-01"),java.sql.Time.valueOf("10:15:00"));
-      // //extra steps here due to persistence api and join, need to create objects in list
-      // List<AppointmentLabTest> tests = new ArrayList<AppointmentLabTest>();
-      // AppointmentLabTest test = new AppointmentLabTest("800","86900","292.9");
-      // test.setDiagnosis((Diagnosis)dbSingleton.db.getData("Diagnosis", "code='292.9'").get(0));
-      // test.setLabTest((LabTest)dbSingleton.db.getData("LabTest","id='86900'").get(0));
-      // tests.add(test);
-      // newAppt.setAppointmentLabTestCollection(tests);
-      // newAppt.setPatientid(patient);
-      // newAppt.setPhlebid(phleb);
-      // newAppt.setPscid(psc);
-      // boolean good = dbSingleton.db.addData(newAppt);
-      // objs = dbSingleton.db.getData("Appointment", "");
-      // for (Object obj : objs){
-      //    response += obj.toString()+"\n";
-      // }
+      // debug
+      // System.out.println("date: "+date);
+      // System.out.println("pscId: "+pscId);
+      // System.out.println("patientId: "+patientId);
+      // System.out.println("time: "+time);
+      // System.out.println("phlebotomistId: "+phlebotomistId);
+      // System.out.println("physicianId: "+physicianId);
+      // System.out.println("new appt id: "+newApptId);
 
-      // bad appointment
-      // response = "<?xml version="1.0" encoding="UTF-8" standalone="no"?><AppointmentList><error>ERROR:Appointment is not available</error></AppointmentList>";
+      // create & add appointment
+      Appointment newAppt = new Appointment(newApptId,java.sql.Date.valueOf(date),java.sql.Time.valueOf(time+":00"));
+      Patient patient = (Patient)dbSingleton.db.getData("Patient", "id='"+patientId+"'").get(0);
+      Phlebotomist phleb = (Phlebotomist)dbSingleton.db.getData("Phlebotomist", "id='"+phlebotomistId+"'").get(0);
+      PSC psc = (PSC)dbSingleton.db.getData("PSC", "id='"+pscId+"'").get(0);
+      newAppt.setAppointmentLabTestCollection(tests);
+      newAppt.setPatientid(patient);
+      newAppt.setPhlebid(phleb);
+      newAppt.setPscid(psc);
+      boolean addSuccess = dbSingleton.db.addData(newAppt);
+
+      if(!addSuccess){
+         // bad appointment
+         response += "<error>ERROR:Appointment is not available</error>";
+      } else {
+         response += getAppointment(newApptId);
+      }
       
       response += "</AppointmentList>";
       return response;
