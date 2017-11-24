@@ -4,7 +4,6 @@ import javax.jws.*;
 import business.*;
 import components.data.*;
 import java.util.*;
-
 import javax.xml.parsers.*;
 import org.w3c.dom.*;
 import java.io.*;
@@ -139,7 +138,6 @@ public class LAMSService {
          NodeList nList = doc.getElementsByTagName("appointment");
                
          Node apptNode = nList.item(0); // there should be only one appointment
-         // System.out.println("\nCurrent Element: "+apptNode.getNodeName());
               
          if(apptNode.getNodeType() == Node.ELEMENT_NODE){
             Element eElement = (Element)apptNode;
@@ -153,7 +151,6 @@ public class LAMSService {
             
             // get lab tests
             NodeList testsNode = eElement.getElementsByTagName("test");
-            // System.out.println("lab test length: "+testsNode.getLength());
             for(int i = 0 ; i < testsNode.getLength() ; i++){
                String testId = "";
                String dxcode = "";
@@ -184,7 +181,7 @@ public class LAMSService {
       // System.out.println("physicianId: "+physicianId);
       // System.out.println("new appt id: "+newApptId);
 
-      // create & add appointment
+      // create appointment
       Appointment newAppt = new Appointment(newApptId,java.sql.Date.valueOf(date),java.sql.Time.valueOf(time+":00"));
       Patient patient = (Patient)dbSingleton.db.getData("Patient", "id='"+patientId+"'").get(0);
       Phlebotomist phleb = (Phlebotomist)dbSingleton.db.getData("Phlebotomist", "id='"+phlebotomistId+"'").get(0);
@@ -193,13 +190,18 @@ public class LAMSService {
       newAppt.setPatientid(patient);
       newAppt.setPhlebid(phleb);
       newAppt.setPscid(psc);
-      boolean addSuccess = dbSingleton.db.addData(newAppt);
 
-      if(!addSuccess){
-         // bad appointment
-         response += "<error>ERROR:Appointment is not available</error>";
-      } else {
+      // validate appointment
+      // get all appointments on same day
+      List<Object> sameDayAppts = dbSingleton.db.getData("Appointment", "DATE(apptdate)='"+date+"'");
+      // for (Object obj : sameDayAppts){
+      //    System.out.println(obj.toString());
+      // }
+
+      if(BusinessLayer.isAvailable(newAppt, sameDayAppts) && dbSingleton.db.addData(newAppt)){
          response += getAppointment(newApptId);
+      } else {
+         response += "<error>ERROR:Appointment is not available</error>";
       }
       
       response += "</AppointmentList>";
