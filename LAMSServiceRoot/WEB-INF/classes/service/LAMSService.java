@@ -12,20 +12,26 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-// @WebService(serviceName="LAMSService")
+@WebService(serviceName="LAMSService")
 public class LAMSService {
 
    private DBSingleton dbSingleton;
    private final String xmlHead = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
 
-	// @WebMethod(operationName="Initialize")
+   /**
+    * Initialize the database.
+    */
+	@WebMethod(operationName="Initialize")
    public String initialize(){
       dbSingleton = DBSingleton.getInstance();
       dbSingleton.db.initialLoad("LAMS");
       return "Database Initialized";
    }
    
-   // @WebMethod(operationName="GetAllAppointments")
+   /**
+    * Returns an xml string containing all appointments.
+    */
+   @WebMethod(operationName="GetAllAppointments")
    public String getAllAppointments(){
       String xml = xmlHead + "<AppointmentList>";
 
@@ -35,6 +41,8 @@ public class LAMSService {
       for (Object obj : objs){
          xml += formatAppointment(obj);
       }
+
+      xml += "</AppointmentList>";
 
       return xml;
    }
@@ -56,7 +64,11 @@ public class LAMSService {
       return Integer.toString(++newId);
    }
 
-   // @WebMethod(operationName="GetAppointment")
+   /**
+    * Returns an xml string of appointment from id.
+    * @param appointmentID The id of the appointment to get.
+    */
+   @WebMethod(operationName="GetAppointment")
    public String getAppointment(String appointmentID){
       String xml = xmlHead + "<AppointmentList>";
       
@@ -72,6 +84,7 @@ public class LAMSService {
 
    /**
     * Takes in Appointment and creates xml string from it.
+    * @param obj The appointment object.
     */
    private String formatAppointment(Object obj) {
       String date = ((Appointment)obj).getApptdate().toString();
@@ -131,9 +144,13 @@ public class LAMSService {
       return String.format("<%s %s=\"%s\">\n", name, propertyName, value);
    }
 
-   // @WebMethod(operationName="AddAppointment")
+   /**
+    * Create an appointment from xml string.
+    * @param xml The string containing appointment info.
+    */
+   @WebMethod(operationName="AddAppointment")
    public String addAppointment(String xml){
-      String response = xmlHead + "<AppointmentList>";
+      String response = "";
       String date, time, patientId, physicianId, pscId, newApptId, phlebotomistId;
       date = time = patientId = physicianId = pscId = phlebotomistId = "";
       List<AppointmentLabTest> tests = new ArrayList<AppointmentLabTest>();
@@ -181,15 +198,6 @@ public class LAMSService {
          e.printStackTrace();
       }
 
-      // debug
-      // System.out.println("date: "+date);
-      // System.out.println("pscId: "+pscId);
-      // System.out.println("patientId: "+patientId);
-      // System.out.println("time: "+time);
-      // System.out.println("phlebotomistId: "+phlebotomistId);
-      // System.out.println("physicianId: "+physicianId);
-      // System.out.println("new appt id: "+newApptId);
-
       // create appointment
       Appointment newAppt = new Appointment(newApptId,java.sql.Date.valueOf(date),java.sql.Time.valueOf(time+":00"));
       Patient patient = (Patient)dbSingleton.db.getData("Patient", "id='"+patientId+"'").get(0);
@@ -203,18 +211,13 @@ public class LAMSService {
       // validate appointment
       // get all appointments on same day
       List<Object> sameDayAppts = dbSingleton.db.getData("Appointment", "DATE(apptdate)='"+date+"'");
-      // objs = dbSingleton.db.getData("Appointment", "apptdate>'2004-01-01'");
-      // for (Object obj : sameDayAppts){
-      //    System.out.println(obj.toString());
-      // }
 
       if(BusinessLayer.isAvailable(newAppt, sameDayAppts) && dbSingleton.db.addData(newAppt)){
-         response += getAppointment(newApptId);
+         response = getAppointment(newApptId);
       } else {
-         response += "<error>ERROR:Appointment is not available</error>";
+         response = xmlHead+"<AppointmentList><error>ERROR:Appointment is not available</error></AppointmentList>";
       }
       
-      response += "</AppointmentList>";
       return response;
    }
 

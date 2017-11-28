@@ -24,8 +24,8 @@ public class test {
       String response = service.addAppointment("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><appointment><date>2017-02-02</date><time>10:00</time><patientId>220</patientId><physicianId>20</physicianId><pscId>520</pscId><phlebotomistId>110</phlebotomistId><labTests><test id=\"86900\" dxcode=\"292.9\" /><test id=\"86609\" dxcode=\"307.3\" /></labTests></appointment>");
       System.out.println(response);
       // add appointment that does overlap
-      String response2 = service.addAppointment("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><appointment><date>2017-02-02</date><time>10:00</time><patientId>220</patientId><physicianId>20</physicianId><pscId>520</pscId><phlebotomistId>110</phlebotomistId><labTests><test id=\"86900\" dxcode=\"292.9\" /><test id=\"86609\" dxcode=\"307.3\" /></labTests></appointment>");
-      System.out.println(response2);
+      // String response2 = service.addAppointment("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><appointment><date>2017-02-02</date><time>10:00</time><patientId>220</patientId><physicianId>20</physicianId><pscId>520</pscId><phlebotomistId>110</phlebotomistId><labTests><test id=\"86900\" dxcode=\"292.9\" /><test id=\"86609\" dxcode=\"307.3\" /></labTests></appointment>");
+      // System.out.println(response2);
 
       // test business layer
       // BusinessLayer.isOverlapping(java.sql.Time.valueOf("12:00:00"),java.sql.Time.valueOf("01:00:00"));
