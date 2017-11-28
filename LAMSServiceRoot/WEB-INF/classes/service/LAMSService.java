@@ -53,8 +53,7 @@ public class LAMSService {
             newId = id;
          }
       }
-      // return Integer.toString(++newId);
-      return "799";
+      return Integer.toString(++newId);
    }
 
    // @WebMethod(operationName="GetAppointment")
@@ -108,16 +107,26 @@ public class LAMSService {
          dx = apptTest.getDiagnosis();
          xml += "<appointmentLabTest appointmentId=\""+id+"\" dxcode=\""+dx.getCode()+"\" labTestId=\""+test.getKey()+"\"/>";
       }
-      xml += "</allLabTests>";
 
-      xml += "</appointment>";
+      xml += "</allLabTests></appointment>";
       return xml;
    }
 
+   /**
+    * Create an xml tag.
+    * @param name The tag name.
+    * @param value The text value of the element.
+    */
    private static String tag(String name, String value) {
       return String.format("<%s>%s</%s>\n", name, value, name);
    }
 
+   /**
+    * Create an xml element with given tag name and with text value.
+    * @param name The tag name.
+    * @param value The value of the attribute of the xml element.
+    * @param propertyName The name of the attribute of the xml element.
+    */
    private static String tag(String name, String value, String propertyName) {
       return String.format("<%s %s=\"%s\">\n", name, propertyName, value);
    }
@@ -194,6 +203,7 @@ public class LAMSService {
       // validate appointment
       // get all appointments on same day
       List<Object> sameDayAppts = dbSingleton.db.getData("Appointment", "DATE(apptdate)='"+date+"'");
+      // objs = dbSingleton.db.getData("Appointment", "apptdate>'2004-01-01'");
       // for (Object obj : sameDayAppts){
       //    System.out.println(obj.toString());
       // }
